@@ -35,6 +35,7 @@
 
       // Internal properties.
       self._codecs = {};
+      self._playingIDs = [];
       self._howls = [];
       self._muted = false;
       self._volume = 1;
@@ -412,6 +413,7 @@
 
           // Emit to all Howls that the audio has resumed.
           for (var i=0; i<self._howls.length; i++) {
+            console.log("Resuming", self._howls[i]);
             self._howls[i]._emit('resume');
           }
         });
@@ -622,6 +624,8 @@
       var self = this;
       var id = null;
 
+      console.log("Playing", sprite, internal);
+
       // Determine if a sprite, sound id or nothing was passed
       if (typeof sprite === 'number') {
         id = sprite;
@@ -719,6 +723,16 @@
       if (self._webAudio) {
         // Fire this when the sound is ready to play to begin Web Audio playback.
         var playWebAudio = function() {
+          console.log("PLAYING WEB AUDIOOO", sound._id);
+
+          // Make sure audio isnt already playing.?
+          if ( Howler._playingIDs.indexOf(sound._id) != -1) {
+            console.error("Tried to play sound which already playing!!!!");
+            return;
+          } else {
+            Howler._playingIDs.push(sound._id);
+          }
+
           self._refreshBuffer(sound);
 
           // Setup the playback params.
@@ -839,6 +853,8 @@
      */
     pause: function(id) {
       var self = this;
+
+      console.log("pausing", id);
 
       // If the sound hasn't loaded or a play() promise is pending, add it to the load queue to pause when capable.
       if (self._state !== 'loaded' || self._playLock) {
@@ -1696,6 +1712,30 @@
     _emit: function(event, id, msg) {
       var self = this;
       var events = self['_on' + event];
+
+      // Logic Make sure any given ID can only be playing once.
+      // Checks play events for duplicate ID's
+      if ( event === "resume") {
+        if (Howler._playingIDs.indexOf(id) != -1) {
+          // If this audio was told to play, but an ID of it is already playing, then it doesn't play.
+          console.error("[s] Tried to play an audio which is already playing - this is probably due to Chrome66 context issue. This audio should NOT be played.");
+        } else {
+          console.info("[s] Audio with id", id, "has been pushed into playingID's array");
+          Howler._playingIDs.push(id);
+        }
+      }
+
+      // Checks end events to remove ID from array.
+      if ( event === "end" || event === "pause") {
+        if (Howler._playingIDs.indexOf(id) != -1) {
+          // If this audio was told to play, but an ID of it is already playing, then it doesn't play.
+          console.info("[s] Spliced id", id, "from playing audio array");
+          Howler._playingIDs.splice(Howler._playingIDs.indexOf(id), 1);
+        } else {
+          // This audio wasn't playing - yet it has ended?
+          console.error("[s] Audio with id", id, "emit an 'end' event, however this id didn't exist in the playing ID's array.");
+        }
+      }
 
       // Loop through event store and fire all functions.
       for (var i=events.length-1; i>=0; i--) {

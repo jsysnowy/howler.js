@@ -1,0 +1,65 @@
+<html>
+
+<head>
+    <title>Howler Bug Test</title>
+    <script src="src/howler.core.js"
+        crossorigin="anonymous"></script>
+    <script>
+
+        // Create and play Howl
+        var sound = new Howl({
+            src: ['output.mp3'],
+            sprite: {
+                "background": [
+                    0,
+                    3144.013605442177
+                ]
+            },
+        });
+
+        console.log("Index called play background");
+        let soundID = sound.play("background");
+
+        console.log("Index set loop to true");
+        sound.loop(true, soundID);
+
+        console.log("Index paused soundID");
+        sound.pause(soundID);
+
+        // Event Listeners
+        window.onblur = (e) => {
+            console.log("Index paused soundID");
+            sound.pause(soundID);
+        }
+
+        window.onfocus = (e) => {
+            console.log("Index played soundID");
+            sound.play(soundID);
+        }
+
+
+        // Put status visibly on page
+        var updateInfo = () => {
+            requestAnimationFrame(updateInfo);
+
+            document.getElementById("contextinfo").innerHTML = "Context status: " + Howler.ctx.state;
+            document.getElementById("audiostate").innerHTML = "Paused: " + sound._sounds[0]._paused;
+        }
+
+        requestAnimationFrame(updateInfo);
+    </script>
+</head>
+
+<body>
+    Howler bug
+    <div id="contextinfo">
+
+    </div>
+    <div id="howlerinfo">
+        <div id="audiostate">
+
+        </div>
+    </div>
+</body>
+
+</html>
